@@ -75,8 +75,10 @@ class BPLL(AbstractLearner):
         if gfs is None: # no list was saved, so the truth of all formulas is unaffected by the variable's value
             # uniform distribution applies
             p = 1.0 / values
-            return [p] * values
-        sums = [0] * values#numpy.zeros(values)
+            # return [p] * values
+            return np.full((values,), fill_value=np.float128(1.0) / values, dtype=np.float128)
+        # sums = [0] * values#numpy.zeros(values)
+        sums = np.zeros((values,), dtype=np.float128)
         for fidx in gfs:
             for validx, n in enumerate(self._stat[fidx][varidx]):
                 if w[fidx] == HARD: 
@@ -86,10 +88,11 @@ class BPLL(AbstractLearner):
                 elif sums[validx] is not None:
                     # don't set it if this value has already been assigned marked as inadmissible.
                     sums[validx] += n * w[fidx]
-        expsums = [numpy.exp(s) if s is not None else 0 for s in sums]#numpy.exp(numpy.array(sums))
-        z = sum(expsums)
-        if z == 0: raise SatisfiabilityException('MLN is unsatisfiable: all probability masses of variable %s are zero.' % str(var))
-        return [w_ / z for w_ in expsums]
+            sums[validx] /= values
+        expsums = np.array([numpy.exp(np.float128(s)) if s is not None else 0 for s in sums], dtype=np.float128)#numpy.exp(numpy.array(sums))
+        z = np.sum(expsums, dtype=np.float128)
+        if z == 0.: raise SatisfiabilityException('MLN is unsatisfiable: all probability masses of variable %s are zero.' % str(var))
+        return np.array([w_ / z for w_ in expsums], dtype=np.float128)
 #         sum_max = numpy.max(sums)
 #         sums -= sum_max
 #         expsums = numpy.sum(numpy.exp(sums))
@@ -104,7 +107,8 @@ class BPLL(AbstractLearner):
 
     def _compute_pls(self, w):
         if self._pls is None or self._lastw is None or self._lastw != list(w):
-            self._pls = [self._pl(var.idx, w) for var in self.mrf.variables]
+            # self._pls = np.concatenate((self._pl(var.idx, w) for var in self.mrf.variables), dtype=np.float128)
+            self._pls = np.array([self._pl(var.idx, w) for var in self.mrf.variables])
             self._lastw = list(w)
 #             self.write_pls()
     
@@ -135,7 +139,7 @@ class BPLL(AbstractLearner):
             self._stat[fidx] = {}
         d = self._stat[fidx]
         if varidx not in d:
-            d[varidx] = [0] * self.mrf.variable(varidx).valuecount()
+            d[varidx] = np.zeros((self.mrf.variable(varidx).valuecount(),), dtype=np.float128)
         d[varidx][validx] += inc
         
     def _compute_statistics(self):
@@ -165,12 +169,14 @@ class DPLL(BPLL, DiscriminativeLearner):
     def _f(self, w, **params):
         self._compute_pls(w)
         probs = []
-        for var in self.mrf.variables:
+        probs = np.array((len(self.mrf.variables),), dtype=np.float128)
+        probs = []
+        for i, var in enumerate(self.mrf.variables):
             if var.predicate.name in self.epreds: continue
             p = self._pls[var.idx][var.evidence_value_index()]
             if p == 0: p = 1e-10 # prevent 0 probabilities
             probs.append(p)
-        return fsum(list(map(log, probs)))
+        return np.sum(np.log(np.array(probs, dtype=np.float128)))
 
     def _grad(self, w, **params):        
         self._compute_pls(w)
@@ -183,8 +189,10 @@ class DPLL(BPLL, DiscriminativeLearner):
                 for i, val in enumerate(counts):
                     g -= val * self._pls[varidx][i]
                 grad[fidx] += g
-        self.grad_opt_norm = sqrt(float(fsum([x * x for x in grad])))
-        return numpy.array(grad)
+        self.grad_opt_norm = np.sqrt(np.sum(np.square(grad)))
+        # self.grad_opt_norm = sqrt(float(fsum([x * x for x in grad])))
+        # return numpy.array(grad)
+        return grad
 
 
 class BPLL_CG(BPLL):
