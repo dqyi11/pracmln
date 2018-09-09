@@ -142,6 +142,7 @@ class GibbsSampler(MCMCInference):
         while converged != self.chains and steps < self.maxsteps:
             converged = 0
             steps += 1
+            print('STEP {} / {}'.format(steps, self.maxsteps))
             for chain in chains.chains:
                 chain.step()
             if self.verbose:

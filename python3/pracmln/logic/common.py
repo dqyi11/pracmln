@@ -985,6 +985,8 @@ class Logic(object):
         def __str__(self):
             return {True:'!', False:'', 2: '*'}[self.negated] + self.predname + "(" + ",".join(self.args) + ")"
 
+        def __hash__(self):
+            return hash(str(self))
 
         def cstr(self, color=False):
             return {True:"!", False:"", 2:'*'}[self.negated] + colorize(self.predname, predicate_color, color) + "(" + ",".join(self.args) + ")"
@@ -1338,6 +1340,9 @@ class Logic(object):
 
         def __str__(self):
             return {True:"!", False:""}[self.negated] + str(self.gndatom)
+
+        def __hash__(self):
+            return hash(str(self))
 
 
         def cstr(self, color=False):
@@ -2518,7 +2523,6 @@ class Logic(object):
         a new instance of it.
         """
         return clazz(*args, **kwargs)
-    
 
         
     

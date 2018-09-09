@@ -170,7 +170,6 @@ class DPLL(BPLL, DiscriminativeLearner):
         self._compute_pls(w)
         probs = []
         probs = np.array((len(self.mrf.variables),), dtype=np.float128)
-        probs = []
         for i, var in enumerate(self.mrf.variables):
             if var.predicate.name in self.epreds: continue
             p = self._pls[var.idx][var.evidence_value_index()]
