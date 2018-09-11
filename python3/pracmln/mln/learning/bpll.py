@@ -28,10 +28,9 @@ from dnutils.console import barstr
 
 from collections import defaultdict
 
-import numpy
+import numpy as np
 from dnutils import logs, out
 from dnutils.console import barstr
-from numpy.ma.core import sqrt, log
 
 from ..constants import HARD
 from ..errors import SatisfiabilityException
@@ -77,7 +76,7 @@ class BPLL(AbstractLearner):
             p = 1.0 / values
             # return [p] * values
             return np.full((values,), fill_value=np.float128(1.0) / values, dtype=np.float128)
-        # sums = [0] * values#numpy.zeros(values)
+        # sums = [0] * values#np.zeros(values)
         sums = np.zeros((values,), dtype=np.float128)
         for fidx in gfs:
             for validx, n in enumerate(self._stat[fidx][varidx]):
@@ -89,15 +88,15 @@ class BPLL(AbstractLearner):
                     # don't set it if this value has already been assigned marked as inadmissible.
                     sums[validx] += n * w[fidx]
             sums[validx] /= values
-        expsums = np.array([numpy.exp(np.float128(s)) if s is not None else 0 for s in sums], dtype=np.float128)#numpy.exp(numpy.array(sums))
+        expsums = np.array([np.exp(np.float128(s)) if s is not None else 0 for s in sums], dtype=np.float128)#np.exp(np.array(sums))
         z = np.sum(expsums, dtype=np.float128)
         if z == 0.: raise SatisfiabilityException('MLN is unsatisfiable: all probability masses of variable %s are zero.' % str(var))
         return np.array([w_ / z for w_ in expsums], dtype=np.float128)
-#         sum_max = numpy.max(sums)
+#         sum_max = np.max(sums)
 #         sums -= sum_max
-#         expsums = numpy.sum(numpy.exp(sums))
-#         s = numpy.log(expsums)    
-#         return numpy.exp(sums - s)
+#         expsums = np.sum(np.exp(sums))
+#         s = np.log(expsums)    
+#         return np.exp(sums - s)
 
     def write_pls(self):
         for var in self.mrf.variables:
@@ -123,7 +122,7 @@ class BPLL(AbstractLearner):
 
     def _grad(self, w):
         self._compute_pls(w)
-        grad = numpy.zeros(len(self.mrf.formulas), numpy.float64)        
+        grad = np.zeros(len(self.mrf.formulas), np.float64)        
         for fidx, varval in self._stat.items():
             for varidx, counts in varval.items():
                 evidx = self.mrf.variable(varidx).evidence_value_index()
@@ -131,8 +130,8 @@ class BPLL(AbstractLearner):
                 for i, val in enumerate(counts):
                     g -= val * self._pls[varidx][i]
                 grad[fidx] += g
-        self.grad_opt_norm = sqrt(float(fsum([x * x for x in grad])))
-        return numpy.array(grad)
+        self.grad_opt_norm = np.sqrt(float(fsum([x * x for x in grad])))
+        return np.array(grad)
 
     def _addstat(self, fidx, varidx, validx, inc=1):
         if fidx not in self._stat:
@@ -169,7 +168,6 @@ class DPLL(BPLL, DiscriminativeLearner):
     def _f(self, w, **params):
         self._compute_pls(w)
         probs = []
-        probs = np.array((len(self.mrf.variables),), dtype=np.float128)
         for i, var in enumerate(self.mrf.variables):
             if var.predicate.name in self.epreds: continue
             p = self._pls[var.idx][var.evidence_value_index()]
@@ -179,7 +177,7 @@ class DPLL(BPLL, DiscriminativeLearner):
 
     def _grad(self, w, **params):        
         self._compute_pls(w)
-        grad = numpy.zeros(len(self.mrf.formulas), numpy.float64)        
+        grad = np.zeros(len(self.mrf.formulas), np.float64)        
         for fidx, varval in self._stat.items():
             for varidx, counts in varval.items():
                 if self.mrf.variable(varidx).predicate.name in self.epreds: continue
@@ -189,8 +187,8 @@ class DPLL(BPLL, DiscriminativeLearner):
                     g -= val * self._pls[varidx][i]
                 grad[fidx] += g
         self.grad_opt_norm = np.sqrt(np.sum(np.square(grad)))
-        # self.grad_opt_norm = sqrt(float(fsum([x * x for x in grad])))
-        # return numpy.array(grad)
+        # self.grad_opt_norm = np.sqrt(float(fsum([x * x for x in grad])))
+        # return np.array(grad)
         return grad
 
 
