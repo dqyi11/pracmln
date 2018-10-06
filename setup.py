@@ -3,8 +3,14 @@ import os
 from distutils.core import setup
 
 import _version
+
 import pip
-pip.main(['install', 'appdirs'])
+if hasattr(pip, 'main'):
+    pip.main(['install', 'appdirs'])
+else
+    from pip._internal import main
+    main(['install', 'appdirs']])
+
 # from setuptools.command import build_py
 
 
