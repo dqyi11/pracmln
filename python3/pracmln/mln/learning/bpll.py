@@ -118,7 +118,7 @@ class BPLL(AbstractLearner):
             p = self._pls[var.idx][var.evidence_value_index()]
             if p == 0: p = 1e-10 # prevent 0 probabilities
             probs.append(p)
-        return fsum(list(map(log, probs)))
+        return np.sum(np.log(np.array(probs, dtype=np.float128)))
 
     def _grad(self, w):
         self._compute_pls(w)
@@ -130,8 +130,8 @@ class BPLL(AbstractLearner):
                 for i, val in enumerate(counts):
                     g -= val * self._pls[varidx][i]
                 grad[fidx] += g
-        self.grad_opt_norm = np.sqrt(float(fsum([x * x for x in grad])))
-        return np.array(grad)
+        self.grad_opt_norm = np.sqrt(np.sum(np.square(grad)))
+        return grad
 
     def _addstat(self, fidx, varidx, validx, inc=1):
         if fidx not in self._stat:
