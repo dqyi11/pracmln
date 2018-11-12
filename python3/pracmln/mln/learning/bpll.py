@@ -87,7 +87,9 @@ class BPLL(AbstractLearner):
                 elif sums[validx] is not None:
                     # don't set it if this value has already been assigned marked as inadmissible.
                     sums[validx] += n * w[fidx]
-            sums[validx] /= values
+        
+        #sums[validx] /= values
+        sums /= values
         expsums = np.array([np.exp(np.float128(s)) if s is not None else 0 for s in sums], dtype=np.float128)#np.exp(np.array(sums))
         z = np.sum(expsums, dtype=np.float128)
         if z == 0.: raise SatisfiabilityException('MLN is unsatisfiable: all probability masses of variable %s are zero.' % str(var))
